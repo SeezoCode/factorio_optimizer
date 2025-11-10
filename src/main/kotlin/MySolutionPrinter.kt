@@ -1,9 +1,6 @@
-import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.google.ortools.sat.CpSolverSolutionCallback
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
 import kotlin.math.ceil
 
 val tableCellWidth = 10
@@ -11,7 +8,8 @@ val tableCellWidth = 10
 // 1. Create a class that inherits from CpSolverSolutionCallback
 class MySolutionPrinter(
     private val bounds: bounds,
-    private val cordsIntVars: List<layoutItemAndIntVar>
+    private val cordsIntVars: List<layoutItemAndIntVar>,
+    private val data: RootData
 ) : CpSolverSolutionCallback() {
 
     // Use a default Gson for blueprints (Factorio JSON doesn't use underscores)
@@ -92,9 +90,10 @@ class MySolutionPrinter(
 
             val recipe = layoutItem.layoutItem.recipe
 
-            val requestFilters = recipe.ingredients.mapIndexed { index, ingredient ->
+            val requestFilters = recipe.ingredients.mapIndexedNotNull { index, ingredient ->
                 val requestedAmount = ceil(ingredient.amount / recipe.energy * 60).toInt()
-                RequestFilter(
+                if (data.items[ingredient.name] == null) null
+                else RequestFilter(
                     index = index + 1, // Factorio indices are 1-based
                     name = ingredient.name,
                     count = requestedAmount
@@ -105,9 +104,9 @@ class MySolutionPrinter(
             entities.add(BlueprintEntity(
                 entity_number = entityNumber++,
                 name = "assembling-machine-3",
-                recipe = recipeName,
-                position = Position(baseX + 1.5, baseY + 1.5), // Centered in its 3x3 area
-                direction = 1
+                position = Position(baseX + 1.5, baseY + 1.5),
+                recipe = recipeName, // Centered in its 3x3 area
+                direction = 1,
             ))
 
             // 2. Requester Chest (r) (1x1, at tile pos [4,0]. Center is 4.5, 0.5)
@@ -115,15 +114,18 @@ class MySolutionPrinter(
                 entity_number = entityNumber++,
                 name = "logistic-chest-requester",
                 position = Position(baseX + 4.5, baseY + 0.5),
-                request_filters = requestFilters, // **FIXED: Use 'request_filters' **
-                request_from_buffers = true      // **FIXED: Add 'request_from_buffers' **
+                request_from_buffers = true, // **FIXED: Use 'request_filters' **
+                request_filters = requestFilters,
+                bar = 48
+                // **FIXED: Add 'request_from_buffers' **
             ))
 
             // 3. Provider Chest (p) (1x1, at tile pos [4,1]. Center is 4.5, 1.5)
             entities.add(BlueprintEntity(
                 entity_number = entityNumber++,
                 name = "logistic-chest-passive-provider",
-                position = Position(baseX + 4.5, baseY + 1.5)
+                position = Position(baseX + 4.5, baseY + 1.5),
+                bar = if (recipe.mainProduct!!.item!!.stackSize > 10) 1 else if (recipe.mainProduct.item!!.stackSize > 4) 2 else 1,
             ))
 
             // 4. Top Inserter (i) (Input) (1x1, at tile pos [3,0]. Center is 3.5, 0.5)
@@ -131,7 +133,7 @@ class MySolutionPrinter(
                 entity_number = entityNumber++,
                 name = "fast-inserter",
                 position = Position(baseX + 3.5, baseY + 0.5),
-                direction = 2 // Points West (picks from East, drops to West)
+                // Points West (picks from East, drops to West)
             ))
 
             // 5. Bottom Inserter (i) (Output) (1x1, at tile pos [3,1]. Center is 3.5, 1.5)
@@ -139,7 +141,8 @@ class MySolutionPrinter(
                 entity_number = entityNumber++,
                 name = "fast-inserter",
                 position = Position(baseX + 3.5, baseY + 1.5),
-                direction = 6 // Points East (picks from West, drops to East)
+                direction = 6,
+                // Points East (picks from West, drops to East)
             ))
 
             val pole1EntityNumber = (0..entityNumber step 6).toList()
@@ -148,7 +151,8 @@ class MySolutionPrinter(
                 entity_number = entityNumber++,
                 name = "medium-electric-pole", // Changed to medium for better coverage
                 position = Position(baseX + 3.5, baseY + 2.5),
-                neighbours = pole1EntityNumber // **Manually connect to Pole 1**
+                neighbours = pole1EntityNumber,
+                // **Manually connect to Pole 1**
             ))
 
         }
@@ -169,6 +173,7 @@ class MySolutionPrinter(
         val blueprintString = compressAndEncode(jsonString)
 
         File("$path/best_output_string.txt").writeText(blueprintString)
+        File("$path/objectiveValuation.txt").appendText(objectiveVal.toString() + "\n")
 //        File("$path/all_output_strings.txt").appendText(blueprintString + "\n")
         File("$path/allSolves/${printFormattedTime()} - output_string_$solutionCount.txt").writeText(blueprintString)
 

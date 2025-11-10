@@ -229,7 +229,8 @@ data class BlueprintEntity(
     val request_from_buffers: Boolean? = null,
     val request_filters: List<RequestFilter>? = null,
     val items: Map<String, Int>? = null,
-    val neighbours: List<Int>? = null
+    val neighbours: List<Int>? = null,
+    val bar: Int? = null
 
 )
 

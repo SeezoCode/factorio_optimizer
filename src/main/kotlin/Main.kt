@@ -72,6 +72,12 @@ fun main() {
     println()
     val x = requirements(listOf(
         recipeReq(data.recipes["utility-science-pack"]!!, 1.0),
+        recipeReq(data.recipes["automation-science-pack"]!!, 1.0),
+        recipeReq(data.recipes["logistic-science-pack"]!!, 1.0),
+        recipeReq(data.recipes["chemical-science-pack"]!!, 1.0),
+        recipeReq(data.recipes["production-science-pack"]!!, 1.0),
+        recipeReq(data.recipes["barrel"]!!, 3.0),
+
 //        recipeReq(data.recipes["electric-engine-unit"]!!, 4.0)
     ), data)
     (x).requirementsHumanOutput
@@ -91,6 +97,7 @@ fun main() {
         sourceItemLoc(data.items["plastic-bar"]!!, cords(2,0)),
         sourceItemLoc(data.items["steel-plate"]!!, cords(4,0)),
         sourceItemLoc(data.items["battery"]!!, cords(6,0)),
+        sourceItemLoc(data.items["barrel"]!!, cords(7,7), 1000.0),
 //            sourceItemLoc(data.items["advanced-circuit"]!!, cords(20,0))
 //        sourceItemLoc(data.items["utility-science-pack"]!!, cords(5,5), 1000.0)
 
@@ -245,7 +252,7 @@ fun main() {
     model.minimize(totalDistance)
 
     val solver = CpSolver()
-    val callback = MySolutionPrinter(bound1, cordsIntVars)
+    val callback = MySolutionPrinter(bound1, cordsIntVars, data)
     val status = solver.solve(model, callback)
 
     if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
@@ -298,7 +305,7 @@ data class req(val recipes: List<recipeAndCount>, val items: List<itemAndCount>)
 
             this.recipes.forEach { logs.add("(assemblers: ${String.format("%.2f", it.noAssemblingMachines)}x) (amount: ${String.format("%.2f", it.count)}/s) -- ${it.recipe.name}") }
             logs.add("")
-            logs.add("total items: ${this.items.size} (Σitems = ${String.format("%.2f", this.items.sumOf { it.count })})")
+            logs.add("total essential items: ${this.items.size} (Σitems = ${String.format("%.2f", this.items.sumOf { it.count })})")
             this.items.forEach { logs.add("${it.item.name}: ${String.format("%.2f", it.count)}/s") }
             logs.add("")
             logs.add("")
