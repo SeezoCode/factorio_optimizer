@@ -15,7 +15,7 @@ this is the output, rendered as a complete, importable blueprint. This includes 
 # How to run
 - specify recipes and input sources (by not setting source locations the system won't account for these distances)
 - in terminal `./gradlew run`
-- outputs are in `src/main/resources/solves/
+- outputs are in `src/main/resources/solves/`
 
 ## Closer look and statistics
 
