@@ -29,7 +29,9 @@ fun main() {
 
 //    deleteFolderRecursively("src/main/resources/solves/$launchTime - solve/allSolves")
     try {
+        Files.createDirectory(Paths.get("src/main/resources/solves/"))
         Files.createDirectory(Paths.get(path))
+        
         Files.createDirectory(Paths.get("$path/allSolves"))
     } catch (e: IOException) {}
 
