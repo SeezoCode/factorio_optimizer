@@ -12,8 +12,12 @@ The system considers input resource location (can be multiple per single resourc
 
 this is the output, rendered as a complete, importable blueprint. This includes recipes, and requester chests. This is equivalent to 60 items per minute of utility science pack (times assembler speed)
 
+# How to run
+- specify recipes and input sources (by not setting source locations the system won't account for these distances)
+- in terminal `./gradlew run`
+- outputs are in `src/main/resources/solves/
 
-## Closer look
+## Closer look and statistics
 
 ### Gradually finding better layouts
 [final_video_1000w3.mp4](figures/final_video_1000w3.mp4)
