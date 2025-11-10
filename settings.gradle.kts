@@ -1,1 +1,1 @@
-rootProject.name = "factorio_optimizer2"
+rootProject.name = "factorio_optimizer"
