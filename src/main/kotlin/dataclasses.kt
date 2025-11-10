@@ -304,7 +304,7 @@ class Log(private val filename: String = "log.txt") {
 
     fun add(message: String) {
         // 1. Print the string to the console
-        println("log: $message")
+        println("> $message")
 
         // 2. Save (append) the string to the file
         try {

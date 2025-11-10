@@ -13,7 +13,9 @@ import kotlin.math.ceil
 import kotlin.math.pow
 
 val logs = Log()
-val path = "src/main/resources/solves/$launchTime - solve"
+
+const val solvesPath = "src/main/resources/solves/"
+val path = "${solvesPath}$launchTime - solve"
 
 fun main() {
     val gson = GsonBuilder()
@@ -29,10 +31,13 @@ fun main() {
 
 //    deleteFolderRecursively("src/main/resources/solves/$launchTime - solve/allSolves")
     try {
-        Files.createDirectory(Paths.get("src/main/resources/solves/"))
+        Files.createDirectory(Paths.get(solvesPath))
+    } catch (e: IOException) {}
+
+    try {
         Files.createDirectory(Paths.get(path))
-        
         Files.createDirectory(Paths.get("$path/allSolves"))
+        Files.createDirectory(Paths.get("$path/simpleTableVisual"))
     } catch (e: IOException) {}
 
     val data = gson.fromJson(jsonString, RootData::class.java)
@@ -82,7 +87,10 @@ fun main() {
     val layoutOfSources = listOf<sourceItemLoc>(
         sourceItemLoc(data.items["iron-plate"]!!, cords(0,0)),
 //            sourceItemLoc(data.items["iron-plate"]!!, cords(2,0)),
-        sourceItemLoc(data.items["copper-plate"]!!, cords(5,0)),
+        sourceItemLoc(data.items["copper-plate"]!!, cords(2,0)),
+        sourceItemLoc(data.items["plastic-bar"]!!, cords(2,0)),
+        sourceItemLoc(data.items["steel-plate"]!!, cords(4,0)),
+        sourceItemLoc(data.items["battery"]!!, cords(6,0)),
 //            sourceItemLoc(data.items["advanced-circuit"]!!, cords(20,0))
 //        sourceItemLoc(data.items["utility-science-pack"]!!, cords(5,5), 1000.0)
 
@@ -260,7 +268,7 @@ fun List<layoutItemAndIntVar>.printHumanOutput(bounds: bounds, solver: CpSolver)
                 solver.value(it.cords.x) == x && solver.value(it.cords.y) == y
             }
 
-            assembler?.layoutItem?.item?.name?.formatToLength(20) ?: emptySlot
+            assembler?.layoutItem?.item?.name?.formatToLength(tableCellWidth) ?: emptySlot
         }
         println("| " + rowItems.joinToString(" | ") + " |")
     }
@@ -284,12 +292,16 @@ data class sourceItemLoc(val item: Item, val cords: cords<Long>, val force: Doub
 data class req(val recipes: List<recipeAndCount>, val items: List<itemAndCount>) {
     val requirementsHumanOutput: Unit
         get() {
-            logs.add("total recipes: ${this.recipes.size} (Σ assembler runs: ${this.recipes.sumOf { it.count }})")
+            logs.add("")
+            logs.add("")
+            logs.add("total recipes: ${this.recipes.size} (Σ assembler runs: ${String.format("%.2f", this.recipes.sumOf { it.count })})")
 
             this.recipes.forEach { logs.add("(assemblers: ${String.format("%.2f", it.noAssemblingMachines)}x) (amount: ${String.format("%.2f", it.count)}/s) -- ${it.recipe.name}") }
-            logs.add("\ntotal items: ${this.items.size} (Σitems = ${this.items.sumOf { it.count }})")
+            logs.add("")
+            logs.add("total items: ${this.items.size} (Σitems = ${String.format("%.2f", this.items.sumOf { it.count })})")
             this.items.forEach { logs.add("${it.item.name}: ${String.format("%.2f", it.count)}/s") }
-            logs.add("\n")
+            logs.add("")
+            logs.add("")
         }
 }
 data class itemAndCount(val item: Item, var count: Double)
@@ -303,7 +315,7 @@ fun requirements(recipes: List<recipeReq>, data: RootData): req = recipes.map { 
     itemRequirements(recipe.recipe, (recipe.count / (recipe.recipe.mainProduct?.amount ?: 1.0)), data) }
     .let { req(it.map {it.recipes}.flatten(), it.map { it.items }.flatten()) }
     .let {
-        it.recipes.forEach { logs.add(it.recipe.name) }
+        it.recipes.forEach { logs.add("using recipe: ${it.recipe.name}") }
         val set = it.items.distinctBy { it.item }.map { itemAndCount(it.item, 0.0) }
         it.items.forEach { set.find { s -> s.item.name == it.item.name }!!.count += it.count }
         val recipesNew: MutableList<recipeAndCount> =

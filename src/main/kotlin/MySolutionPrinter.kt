@@ -6,6 +6,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import kotlin.math.ceil
 
+val tableCellWidth = 10
+
 // 1. Create a class that inherits from CpSolverSolutionCallback
 class MySolutionPrinter(
     private val bounds: bounds,
@@ -24,7 +26,8 @@ class MySolutionPrinter(
         solutionCount++
         val objectiveVal = objectiveValue()
 
-        logs.add("\n--- Solution #$solutionCount Found! ---")
+        logs.add("")
+        logs.add("--- Solution #$solutionCount Found! ---")
         logs.add("Objective Cost: ${objectiveVal}") // objectiveValue() is a built-in method
         logs.add("that's ${-1.0 + previousScore / objectiveVal} better")
         logs.add(printFormattedTime())
@@ -34,8 +37,9 @@ class MySolutionPrinter(
         // 3. This is your printHumanOutput logic,
         //    moved inside the callback.
         //    Note: We call value() directly (it's part of this class)
-        println("-------------------- LAYOUT --------------------")
-        val emptySlot = " ".repeat(20) // Empty string of the same length
+        var layout = ""
+        layout += ("-------------------- LAYOUT --------------------\n")
+        val emptySlot = " ".repeat(tableCellWidth) // Empty string of the same length
         (bounds.ly..bounds.uy).forEach { y ->
             val rowItems = (bounds.lx..bounds.ux).map { x ->
                 // Find the assembler at this exact (x, y) coordinate
@@ -43,11 +47,14 @@ class MySolutionPrinter(
                     value(it.cords.x) == x && value(it.cords.y) == y
                 }
 
-                assembler?.layoutItem?.item?.name?.formatToLength(20) ?: emptySlot
+                assembler?.layoutItem?.item?.name?.formatToLength(tableCellWidth) ?: emptySlot
             }
-            println("| " + rowItems.joinToString(" | ") + " |")
+            layout += ("| " + rowItems.joinToString(" | ") + " |\n")
         }
-        println("------------------------------------------------\n")
+        layout += ("------------------------------------------------\n\n\n")
+        println(layout)
+        File("$path/simpleTableVisual/table_$solutionCount.txt").writeText(layout)
+
 
         // 4. Optional: Tell the solver to stop if you're happy
         // if (solutionCount >= solutionLimit) {
@@ -86,7 +93,7 @@ class MySolutionPrinter(
             val recipe = layoutItem.layoutItem.recipe
 
             val requestFilters = recipe.ingredients.mapIndexed { index, ingredient ->
-                val requestedAmount = ceil(ingredient.amount / recipe.energy * 4).toInt()
+                val requestedAmount = ceil(ingredient.amount / recipe.energy * 60).toInt()
                 RequestFilter(
                     index = index + 1, // Factorio indices are 1-based
                     name = ingredient.name,
@@ -97,7 +104,7 @@ class MySolutionPrinter(
             // 1. Assembler (a) (3x3, covers 0,0 to 2,2. Center is 1.5, 1.5)
             entities.add(BlueprintEntity(
                 entity_number = entityNumber++,
-                name = "assembling-machine-2",
+                name = "assembling-machine-3",
                 recipe = recipeName,
                 position = Position(baseX + 1.5, baseY + 1.5), // Centered in its 3x3 area
                 direction = 1
@@ -162,6 +169,7 @@ class MySolutionPrinter(
         val blueprintString = compressAndEncode(jsonString)
 
         File("$path/best_output_string.txt").writeText(blueprintString)
+//        File("$path/all_output_strings.txt").appendText(blueprintString + "\n")
         File("$path/allSolves/${printFormattedTime()} - output_string_$solutionCount.txt").writeText(blueprintString)
 
     }
