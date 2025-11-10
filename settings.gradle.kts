@@ -1,0 +1,1 @@
+rootProject.name = "factorio_optimizer2"
