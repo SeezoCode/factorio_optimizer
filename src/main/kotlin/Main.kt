@@ -76,31 +76,58 @@ fun main() {
         recipeReq(data.recipes["logistic-science-pack"]!!, 1.0),
         recipeReq(data.recipes["chemical-science-pack"]!!, 1.0),
         recipeReq(data.recipes["production-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["barrel"]!!, 3.0),
-
-//        recipeReq(data.recipes["electric-engine-unit"]!!, 4.0)
+        recipeReq(data.recipes["military-science-pack"]!!, 1.0),
     ), data)
+
+    val forbiddenPlaces = mutableListOf<cords<Long>>(
+//        cords(1,1),
+    )
+//    (1..17).forEach { forbiddenPlaces.add(cords(it.toLong(), 8)) }
+
     (x).requirementsHumanOutput
+
+
+    val ms = x.recipes.fold(0) { acc, item -> acc + ceil(item.noAssemblingMachines).toInt() } + forbiddenPlaces.size
+
+//    val maxX = ceil(ms.toDouble().pow(.5)).toLong()
+    val maxX = 16L
+    val maxY = ceil((ms.toDouble() / maxX.toDouble())).toLong()
+
+    val bound1 = bounds(1, maxX, 1, maxY)
+    logs.add(bound1.toString())
+    logs.add("total filled spaces: $ms")
+
 
     Loader.loadNativeLibraries()
     val model = CpModel()
 
-    val ms = x.recipes.fold(0) { acc, item -> acc + ceil(item.noAssemblingMachines).toInt() }
-    val maxX = ceil(ms.toDouble().pow(.5)).toLong() +1
-    val maxY = ceil(ms.toDouble().pow(.5)).toLong() +1
-
     val sourceOffset = 25
-    val layoutOfSources = listOf<sourceItemLoc>(
-        sourceItemLoc(data.items["iron-plate"]!!, cords(0,0)),
-//            sourceItemLoc(data.items["iron-plate"]!!, cords(2,0)),
-        sourceItemLoc(data.items["copper-plate"]!!, cords(2,0)),
-        sourceItemLoc(data.items["plastic-bar"]!!, cords(2,0)),
-        sourceItemLoc(data.items["steel-plate"]!!, cords(4,0)),
-        sourceItemLoc(data.items["battery"]!!, cords(6,0)),
-        sourceItemLoc(data.items["barrel"]!!, cords(7,7), 1000.0),
-//            sourceItemLoc(data.items["advanced-circuit"]!!, cords(20,0))
-//        sourceItemLoc(data.items["utility-science-pack"]!!, cords(5,5), 1000.0)
 
+    //note: y position is actually computed like maxY - y... my bad xd
+    val layoutOfSources = listOf<sourceItemLoc>(
+//        sourceItemLoc(data.items["iron-plate"]!!, cords(1,maxY)),
+//        sourceItemLoc(data.items["iron-plate"]!!, cords(2,maxY)),
+//        sourceItemLoc(data.items["iron-plate"]!!, cords(0,maxY-5)),
+////            sourceItemLoc(data.items["iron-plate"]!!, cords(2,0)),
+//        sourceItemLoc(data.items["copper-plate"]!!, cords(3,maxY)),
+//        sourceItemLoc(data.items["copper-plate"]!!, cords(4,maxY)),
+//        sourceItemLoc(data.items["copper-plate"]!!, cords(16,maxY-5)),
+//        sourceItemLoc(data.items["copper-plate"]!!, cords(16,maxY-2)),
+////        sourceItemLoc(data.items["copper-plate"]!!, cords(30,30)),
+//        sourceItemLoc(data.items["plastic-bar"]!!, cords(6,maxY)),
+//        sourceItemLoc(data.items["steel-plate"]!!, cords(8,maxY)),
+//        sourceItemLoc(data.items["steel-plate"]!!, cords(9,maxY)),
+//        sourceItemLoc(data.items["battery"]!!, cords(15,maxY)),
+//        sourceItemLoc(data.items["sulfur"]!!, cords(15,maxY)),
+//        sourceItemLoc(data.items["stone"]!!, cords(16,maxY-10)),
+//        sourceItemLoc(data.items["stone-brick"]!!, cords(16,maxY-11)),
+//        sourceItemLoc(data.items["stone-brick"]!!, cords(16,maxY)),
+//            sourceItemLoc(data.items["advanced-circuit"]!!, cords(20,0))
+//        sourceItemLoc(data.items["utility-science-pack"]!!, cords(0,0), 500.0),
+//                sourceItemLoc(data.items["automation-science-pack"]!!, cords(4,0), 500.0),
+//    sourceItemLoc(data.items["logistic-science-pack"]!!, cords(8,0), 500.0),
+//    sourceItemLoc(data.items["chemical-science-pack"]!!, cords(12,0), 500.0),
+//    sourceItemLoc(data.items["production-science-pack"]!!, cords(16,0), 500.0),
         )
 
     layoutOfSources.forEach { logs.add("layoutOfSources: ${it.item.name}, (${it.cords.x}, ${it.cords.y}, force: ${it.force}") }
@@ -109,8 +136,7 @@ fun main() {
 //    data.recipes["fast-inserter"]!!.products.forEach { println(it.item) }
 //    println(data.recipes["fast-inserter"]!!.mainProduct!!.item)
 //    x.recipes.forEach { model.newIntVar(0, maxX.toLong(), "x_") }
-    val bound1 = bounds(1, maxX, 1, maxX)
-    println(bound1)
+
     logs.add(bound1.toString())
     val layoutOfRecipes = x.getLayoutItems(bound1, "x")
 //    println()
@@ -121,16 +147,40 @@ fun main() {
         model.newIntVar(it.bounds.ly, it.bounds.uy, "y_${it.id}")))
     }
 
+    val forbiddenPlacesIntVars = forbiddenPlaces.map {
+        cords(model.newIntVar(bound1.lx, bound1.ux, "forbidden_place_x_${it.x}"),
+            model.newIntVar(bound1.ly, bound1.uy, "forbidden_place_y${it.y}"))
+    }
+
     cordsIntVars.forEach { a ->  cordsIntVars.forEach { b -> if(a.cords != b.cords) {
         val b_x = model.newBoolVar("bx_${a.layoutItem.id}_${b.layoutItem.id}")
         model.addDifferent(a.cords.x, b.cords.x).onlyEnforceIf(b_x)
         val b_y = model.newBoolVar("by_${a.layoutItem.id}_${b.layoutItem.id}")
         model.addDifferent(a.cords.y, b.cords.y).onlyEnforceIf(b_y)
         model.addBoolOr(listOf(b_x, b_y))
-    } } }
 
-    val sourcesIntVars = layoutOfSources.map {
+        } }
+//        forbiddenPlacesIntVars.forEach { forbidden ->
+//            model.addDifferent(a.cords.x, forbidden.x).onlyEnforceIf(bXDiff)
+//        }
+    }
 
+
+
+    cordsIntVars.forEach { item ->
+        forbiddenPlaces.forEach { forbidden ->
+            val bXDiff = model.newBoolVar("forbidden_x_${item.layoutItem.id.string}_${forbidden.x}_${forbidden.y}")
+
+            model.addDifferent(item.cords.x, forbidden.x).onlyEnforceIf(bXDiff)
+            model.addEquality(item.cords.x, forbidden.x).onlyEnforceIf(bXDiff.not())
+
+            val bYDiff = model.newBoolVar("forbidden_y_${item.layoutItem.id.string}_${forbidden.x}_${forbidden.y}")
+
+            model.addDifferent(item.cords.y, forbidden.y).onlyEnforceIf(bYDiff)
+            model.addEquality(item.cords.y, forbidden.y).onlyEnforceIf(bYDiff.not())
+
+            model.addBoolOr(listOf(bXDiff, bYDiff))
+        }
     }
 
     val distances = cordsIntVars.map { consumer ->
@@ -246,7 +296,7 @@ fun main() {
         }
     }.flatten().flatten()
 
-    val totalDistance = model.newIntVar(0, Int.MAX_VALUE.toLong(), "total_distance")
+    val totalDistance = model.newIntVar(0, Int.MAX_VALUE.toLong()*10000000, "total_distance")
     model.addEquality(totalDistance, LinearExpr.sum((distances).toTypedArray()))
 
     model.minimize(totalDistance)
@@ -267,7 +317,7 @@ fun main() {
 
 fun List<layoutItemAndIntVar>.printHumanOutput(bounds: bounds, solver: CpSolver) {
     println("-------------------- LAYOUT --------------------")
-    val emptySlot = " ".repeat(20) // Empty string of the same length
+    val emptySlot = " ".repeat(tableCellWidth) // Empty string of the same length
     (bounds.ly..bounds.uy).forEach { y ->
         val rowItems = (bounds.lx..bounds.ux).map { x ->
             // Find the assembler at this exact (x, y) coordinate

@@ -206,7 +206,11 @@ fun String.formatToLength(length: Int, padChar: Char = ' '): String {
 }
 
 
-
+data class QualityFilter(
+    val index: Int,
+    val quality: String,  // "normal", "good", "excellent", etc.
+    val comparator: String  // "=", ">", "<"
+)
 
 // The root object
 data class BlueprintRoot(
@@ -227,11 +231,14 @@ data class BlueprintEntity(
     val recipe: String? = null, // e.g., "electronic-circuit"
     val direction: Int = 2, // 2 = South (looks nice)
     val request_from_buffers: Boolean? = null,
-    val request_filters: List<RequestFilter>? = null,
+//    val request_filters: List<RequestFilter>? = null,
     val items: Map<String, Int>? = null,
     val neighbours: List<Int>? = null,
-    val bar: Int? = null
-
+    val bar: Int? = null,
+    val filter_mode: String? = null,
+    val use_filters: Boolean? = null,
+    val filters: List<QualityFilter>? = null,
+    val request_filters: Any? = null,
 )
 
 data class RequestFilter(
@@ -253,6 +260,64 @@ data class Icon(
 data class Signal(
     val type: String, // "item"
     val name: String  // "utility-science-pack"
+)
+
+
+data class MyDataRoot(
+    val sections: List<Section>,
+    val index: Int
+)
+
+/**
+ * Represents an object within the "sections" array.
+ */
+data class Section(
+    val index: Int,
+    val filters: List<Filter>
+)
+
+/**
+ * Represents an object within the "filters" array.
+ */
+data class Filter(
+    val index: Int,
+    val name: String,
+    val quality: String,
+    val comparator: String,
+    val count: Int
+)
+
+
+data class StorageItemFilter(
+    val index: Int,
+    val name: String,
+    val quality: String,
+    val comparator: String,
+    val count: Int = 1 // Ignored by storage chest, but good to include
+)
+
+data class StorageChestRequest(
+    val sections: List<StorageChestSection>,
+    val index: Int
+)
+
+/**
+ * Represents one object in the "sections" array.
+ */
+data class StorageChestSection(
+    val index: Int,
+    val filters: List<StorageChestFilter>
+)
+
+/**
+ * Represents one object in the "filters" array.
+ */
+data class StorageChestFilter(
+    val index: Int,
+    val name: String,
+    val quality: String,
+    val comparator: String,
+    val count: Int
 )
 
 

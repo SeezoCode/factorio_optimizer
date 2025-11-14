@@ -1,9 +1,11 @@
 import com.google.gson.GsonBuilder
 import com.google.ortools.sat.CpSolverSolutionCallback
 import java.io.File
+import java.lang.System.currentTimeMillis
 import kotlin.math.ceil
 
 val tableCellWidth = 10
+val then = currentTimeMillis()
 
 // 1. Create a class that inherits from CpSolverSolutionCallback
 class MySolutionPrinter(
@@ -120,12 +122,48 @@ class MySolutionPrinter(
                 // **FIXED: Add 'request_from_buffers' **
             ))
 
+//            val storageFilterObject = MyDataRoot(listOf(Section(1, listOf(Filter(1, recipeName, "normal", "=", 1)))), 1)
             // 3. Provider Chest (p) (1x1, at tile pos [4,1]. Center is 4.5, 1.5)
+
+            val storageFilter = StorageChestFilter(
+                index = 1,
+                name = recipeName,
+                quality = "normal",
+                comparator = "=",
+                count = 1
+            )
+
+            // 2. Create the section that holds the filter list
+            val storageSection = StorageChestSection(
+                index = 1,
+                filters = listOf(storageFilter)
+            )
+
+            // 3. Create the root object. This object just has "sections".
+            val storageFilterObject = StorageChestRequest(
+                sections = listOf(storageSection),
+                1
+            )
+
             entities.add(BlueprintEntity(
                 entity_number = entityNumber++,
-                name = "logistic-chest-passive-provider",
+                name = "storage-chest",
                 position = Position(baseX + 4.5, baseY + 1.5),
                 bar = if (recipe.mainProduct!!.item!!.stackSize > 10) 1 else if (recipe.mainProduct.item!!.stackSize > 4) 2 else 1,
+                request_filters = listOf(RequestFilter(
+                    index = 1, // Factorio indices are 1-based
+                    name = recipeName,
+                    count = 1
+                )),
+                use_filters = true
+
+            ))
+
+            entities.add(BlueprintEntity(
+                entity_number = entityNumber++,
+                name = "logistic-chest-active-provider",
+                position = Position(baseX + 4.5, baseY + 2.5),
+                bar = 10,
             ))
 
             // 4. Top Inserter (i) (Input) (1x1, at tile pos [3,0]. Center is 3.5, 0.5)
@@ -133,7 +171,6 @@ class MySolutionPrinter(
                 entity_number = entityNumber++,
                 name = "fast-inserter",
                 position = Position(baseX + 3.5, baseY + 0.5),
-                // Points West (picks from East, drops to West)
             ))
 
             // 5. Bottom Inserter (i) (Output) (1x1, at tile pos [3,1]. Center is 3.5, 1.5)
@@ -142,15 +179,33 @@ class MySolutionPrinter(
                 name = "fast-inserter",
                 position = Position(baseX + 3.5, baseY + 1.5),
                 direction = 6,
+                use_filters = true,
+                filter_mode = "whitelist",
+                filters = listOf(
+                    QualityFilter(index = 1, quality = "normal", comparator = "=")
+                )
                 // Points East (picks from West, drops to East)
             ))
 
-            val pole1EntityNumber = (0..entityNumber step 6).toList()
+            entities.add(BlueprintEntity(
+                entity_number = entityNumber++,
+                name = "fast-inserter",
+                position = Position(baseX + 3.5, baseY + 2.5),
+                direction = 6,
+                use_filters = true,
+                filter_mode = "blacklist",
+                filters = listOf(
+                    QualityFilter(index = 1, quality = "normal", comparator = "=")
+                )
+                // Points East (picks from West, drops to East)
+            ))
+
+            val pole1EntityNumber = (0..entityNumber step 8).toList()
             // 6. Pole 1 (e) (1x1, at tile pos [3,2]. Center is 3.5, 2.5)
             entities.add(BlueprintEntity(
                 entity_number = entityNumber++,
                 name = "medium-electric-pole", // Changed to medium for better coverage
-                position = Position(baseX + 3.5, baseY + 2.5),
+                position = Position(baseX + 3.5, baseY + 3.5),
                 neighbours = pole1EntityNumber,
                 // **Manually connect to Pole 1**
             ))
@@ -168,7 +223,7 @@ class MySolutionPrinter(
         // --- 3. Serialize, Compress, and Encode ---
 
         val jsonString = gson.toJson(root)
-//        File("output_json.json").writeText(jsonString)
+        File("output_json.json").writeText(jsonString)
 
         val blueprintString = compressAndEncode(jsonString)
 
@@ -177,6 +232,10 @@ class MySolutionPrinter(
 //        File("$path/all_output_strings.txt").appendText(blueprintString + "\n")
         File("$path/allSolves/${printFormattedTime()} - output_string_$solutionCount.txt").writeText(blueprintString)
 
+        if (currentTimeMillis() - then > 1000 * 60 * 60 * 4) { //4h
+            logs.add("Stopping search — condition met")
+            stopSearch()
+        }
     }
 }
 
