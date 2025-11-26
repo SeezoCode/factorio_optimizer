@@ -16,6 +16,8 @@ val logs = Log()
 
 const val solvesPath = "src/main/resources/solves/"
 val path = "${solvesPath}$launchTime - solve"
+const val scalingFactor = 1000L
+
 
 fun main() {
     val gson = GsonBuilder()
@@ -53,8 +55,6 @@ fun main() {
     val idk = (data.recipes.map { it.value.category }).toSet()
 //    println(idk)
 
-    val scalingFactor = 1000L
-
 //    println(data.recipes["electronic-circuit"])
 
     val appropriate = listOf("crafting", "pressing", "intermediate-products", "electronics", "crafting-with-fluid", "advanced-crafting", "electronics-with-fluid")
@@ -62,6 +62,9 @@ fun main() {
     data.recipes = data.recipes.filter { entry ->
         entry.value.category in appropriate
     }
+
+//    val disabledRecipes = listOf<String>("electronic-circuit", "advanced-circuit", "processing-unit", "quality-module-1")
+//    data.recipes = data.recipes.filter { recipe -> recipe.value.name !in disabledRecipes }
 
     data.recipes = data.recipes.filter { it.value.category in appropriate }
     println("Found ${data.recipes.size} recipes.")
@@ -72,11 +75,12 @@ fun main() {
     println()
     val x = requirements(listOf(
         recipeReq(data.recipes["utility-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["automation-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["logistic-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["chemical-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["production-science-pack"]!!, 1.0),
-        recipeReq(data.recipes["military-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["automation-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["logistic-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["chemical-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["production-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["military-science-pack"]!!, 1.0),
+//        recipeReq(data.recipes["quality-module-3"]!!, 0.012),
     ), data)
 
     val forbiddenPlaces = mutableListOf<cords<Long>>(
@@ -89,8 +93,8 @@ fun main() {
 
     val ms = x.recipes.fold(0) { acc, item -> acc + ceil(item.noAssemblingMachines).toInt() } + forbiddenPlaces.size
 
-//    val maxX = ceil(ms.toDouble().pow(.5)).toLong()
-    val maxX = 16L
+    val maxX = ceil(ms.toDouble().pow(.5)).toLong()
+//    val maxX = 16L
     val maxY = ceil((ms.toDouble() / maxX.toDouble())).toLong()
 
     val bound1 = bounds(1, maxX, 1, maxY)

@@ -18,6 +18,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.ortools:ortools-java:9.12.4544")
+    implementation("org.jetbrains.lets-plot:lets-plot-kotlin:4.4.1")
+    implementation("org.jetbrains.lets-plot:lets-plot-image-export:4.5.1")
 
     testImplementation(kotlin("test"))
 }

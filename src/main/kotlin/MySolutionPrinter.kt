@@ -6,6 +6,7 @@ import kotlin.math.ceil
 
 val tableCellWidth = 10
 val then = currentTimeMillis()
+data class timestampToScore(val timestamp: Long, val score: Double)
 
 // 1. Create a class that inherits from CpSolverSolutionCallback
 class MySolutionPrinter(
@@ -20,6 +21,8 @@ class MySolutionPrinter(
 
     private var solutionCount = 0
     private val solutionLimit = 5 // Optional: stop after 5 solutions
+
+    private val scores = mutableListOf<timestampToScore>()
 
     // 2. This is the magic function that the solver calls
     override fun onSolutionCallback() {
@@ -83,6 +86,8 @@ class MySolutionPrinter(
             // Get the recipe for this assembler
             val recipeName = layoutItem.layoutItem.recipe.name
 
+            val quality = "uncommon"
+
             // --- Add the 7 entities for your tile ---
             // (Using Factorio's centered coordinate system)
             // Your grid:
@@ -98,7 +103,8 @@ class MySolutionPrinter(
                 else RequestFilter(
                     index = index + 1, // Factorio indices are 1-based
                     name = ingredient.name,
-                    count = requestedAmount
+                    count = requestedAmount,
+                    quality = quality
                 )
             }
 
@@ -109,6 +115,7 @@ class MySolutionPrinter(
                 position = Position(baseX + 1.5, baseY + 1.5),
                 recipe = recipeName, // Centered in its 3x3 area
                 direction = 1,
+                recipe_quality = quality, // <-- SETS THE RECIPE QUALITY
             ))
 
             // 2. Requester Chest (r) (1x1, at tile pos [4,0]. Center is 4.5, 0.5)
@@ -223,16 +230,21 @@ class MySolutionPrinter(
         // --- 3. Serialize, Compress, and Encode ---
 
         val jsonString = gson.toJson(root)
-        File("output_json.json").writeText(jsonString)
+//        File("output_json.json").writeText(jsonString)
 
         val blueprintString = compressAndEncode(jsonString)
 
+        val rightNow = currentTimeMillis()
+        scores.add(timestampToScore(rightNow, objectiveVal / scalingFactor))
+
         File("$path/best_output_string.txt").writeText(blueprintString)
-        File("$path/objectiveValuation.txt").appendText(objectiveVal.toString() + "\n")
+        File("$path/objectiveValuation.txt").appendText("${rightNow}\t${objectiveVal / scalingFactor}\n")
 //        File("$path/all_output_strings.txt").appendText(blueprintString + "\n")
         File("$path/allSolves/${printFormattedTime()} - output_string_$solutionCount.txt").writeText(blueprintString)
 
-        if (currentTimeMillis() - then > 1000 * 60 * 60 * 4) { //4h
+        generateScoreGraph(scores, "$path/")
+
+        if (currentTimeMillis() - then > 1000 * 60 * 60 * 1) {
             logs.add("Stopping search — condition met")
             stopSearch()
         }

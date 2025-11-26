@@ -239,12 +239,15 @@ data class BlueprintEntity(
     val use_filters: Boolean? = null,
     val filters: List<QualityFilter>? = null,
     val request_filters: Any? = null,
+    val recipe_quality: String? = null, // <-- ADD THIS LINE
 )
 
 data class RequestFilter(
     val index: Int, // 1-based index
     val name: String,
-    val count: Int
+    val count: Int,
+    val quality: String? = null,
+    val comparator: String? = "="
 )
 
 data class Position(
