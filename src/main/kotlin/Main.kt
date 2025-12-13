@@ -59,17 +59,15 @@ fun main() {
 
     val appropriate = listOf("crafting", "pressing", "intermediate-products", "electronics", "crafting-with-fluid", "advanced-crafting", "electronics-with-fluid")
 
-    data.recipes = data.recipes.filter { entry ->
-        entry.value.category in appropriate
-    }
-
-//    val disabledRecipes = listOf<String>("electronic-circuit", "advanced-circuit", "processing-unit", "quality-module-1")
-//    data.recipes = data.recipes.filter { recipe -> recipe.value.name !in disabledRecipes }
+    val disabledRecipes = listOf<String>()
+    data.recipes = data.recipes.filter { recipe -> recipe.value.name !in disabledRecipes }
 
     data.recipes = data.recipes.filter { it.value.category in appropriate }
     println("Found ${data.recipes.size} recipes.")
 
     println("\n")
+
+    val quality = "normal"
 //    println(data.recipes["electric-engine-unit"])
 //        itemRequirements(data.recipes["transport-belt"]!!, 1.0, data)
     println()
@@ -306,7 +304,7 @@ fun main() {
     model.minimize(totalDistance)
 
     val solver = CpSolver()
-    val callback = MySolutionPrinter(bound1, cordsIntVars, data)
+    val callback = MySolutionPrinter(bound1, cordsIntVars, data, quality)
     val status = solver.solve(model, callback)
 
     if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {

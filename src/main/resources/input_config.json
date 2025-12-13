@@ -1,0 +1,23 @@
+{
+  "quality": "normal",
+  "forbidden_recipes": [
+    "electric-engine-unit",
+    "cliffs"
+  ],
+  "forbidden_places": [
+    { "x": 1, "y": 1 },
+    { "x": 5, "y": 5 }
+  ],
+  "targets": [
+    { "name": "utility-science-pack", "amount": 1.0 },
+    { "name": "production-science-pack", "amount": 1.0 }
+  ],
+  "sources": [
+    { "name": "iron-plate", "x": 1, "y": 20, "force": 1.0 },
+    { "name": "copper-plate", "x": 3, "y": 20, "force": 1.0 },
+    { "name": "plastic-bar", "x": 6, "y": 20 },
+    { "name": "steel-plate", "x": 8, "y": 20 },
+    { "name": "battery", "x": 15, "y": 20 },
+    { "name": "sulfur", "x": 15, "y": 18 }
+  ]
+}

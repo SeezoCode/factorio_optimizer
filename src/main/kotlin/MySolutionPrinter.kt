@@ -12,7 +12,8 @@ data class timestampToScore(val timestamp: Long, val score: Double)
 class MySolutionPrinter(
     private val bounds: bounds,
     private val cordsIntVars: List<layoutItemAndIntVar>,
-    private val data: RootData
+    private val data: RootData,
+    private val quality: String = "normal"
 ) : CpSolverSolutionCallback() {
 
     // Use a default Gson for blueprints (Factorio JSON doesn't use underscores)
@@ -86,8 +87,6 @@ class MySolutionPrinter(
             // Get the recipe for this assembler
             val recipeName = layoutItem.layoutItem.recipe.name
 
-            val quality = "uncommon"
-
             // --- Add the 7 entities for your tile ---
             // (Using Factorio's centered coordinate system)
             // Your grid:
@@ -135,7 +134,7 @@ class MySolutionPrinter(
             val storageFilter = StorageChestFilter(
                 index = 1,
                 name = recipeName,
-                quality = "normal",
+                quality = quality,
                 comparator = "=",
                 count = 1
             )
