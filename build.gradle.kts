@@ -33,3 +33,9 @@ application {
     // If your `main` is in a package, use the fully-qualified name, e.g. "com.example.MainKt"
     mainClass.set("MainKt")
 }
+
+tasks.named<JavaExec>("run") {
+    // If 'ram' is passed from CLI, use it. Otherwise default to 2g (or whatever you had).
+    val ram = project.findProperty("ram") ?: "6g"
+    jvmArgs = listOf("-Xmx$ram")
+}
