@@ -1,8 +1,7 @@
 {
   "quality": "normal",
   "forbidden_recipes": [
-    "electric-engine-unit",
-    "cliffs"
+    "productivity-module"
   ],
   "forbidden_places": [
     { "x": 1, "y": 1 },

@@ -18,7 +18,6 @@ const val solvesPath = "src/main/resources/solves/"
 val path = "${solvesPath}$launchTime - solve"
 const val scalingFactor = 1000L
 
-
 fun main() {
     val gson = GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
@@ -26,12 +25,29 @@ fun main() {
         .registerTypeAdapterFactory(ListOrObjectAdapterFactory())
         .create()
 
+    // --- LOAD RECIPES DATA ---
     val jsonFileName = "recipes.json"
     val jsonString: String? = RootData::class.java.getResourceAsStream(jsonFileName)
         ?.bufferedReader()
         ?.use { it.readText() }
 
-//    deleteFolderRecursively("src/main/resources/solves/$launchTime - solve/allSolves")
+    if (jsonString == null) {
+        throw RuntimeException("Could not find $jsonFileName")
+    }
+
+    // --- LOAD CONFIGURATION DATA ---
+    val configFileName = "config.json"
+    val configString: String? = RootData::class.java.getResourceAsStream(configFileName)
+        ?.bufferedReader()
+        ?.use { it.readText() }
+
+    if (configString == null) {
+        throw RuntimeException("Could not find $configFileName")
+    }
+
+    val config = gson.fromJson(configString, RunConfiguration::class.java)
+
+    // --- DIRECTORY SETUP ---
     try {
         Files.createDirectory(Paths.get(solvesPath))
     } catch (e: IOException) {}
@@ -45,113 +61,76 @@ fun main() {
     val data = gson.fromJson(jsonString, RootData::class.java)
     interlinkProductsWithItems(data)
 
-    println("\n--- Successfully Parsed JSON Data with Gson ---")
+    println("\n--- Successfully Parsed JSON Data ---")
     println("Game Version: ${data.gameVersion}")
-    println("Found ${data.recipes.size} recipes.")
-    println("Found ${data.items.size} items.")
-    println("Found ${data.fluids.size} fluids.")
-    println("Found ${data.entities.size} entities.")
-
-    val idk = (data.recipes.map { it.value.category }).toSet()
-//    println(idk)
-
-//    println(data.recipes["electronic-circuit"])
+    println("Quality setting: ${config.quality}")
 
     val appropriate = listOf("crafting", "pressing", "intermediate-products", "electronics", "crafting-with-fluid", "advanced-crafting", "electronics-with-fluid")
 
-    val disabledRecipes = listOf<String>()
-    data.recipes = data.recipes.filter { recipe -> recipe.value.name !in disabledRecipes }
+    // 1. Filter Forbidden Recipes (Loaded from JSON)
+    data.recipes = data.recipes.filter { recipe -> recipe.value.name !in config.forbiddenRecipes }
 
     data.recipes = data.recipes.filter { it.value.category in appropriate }
-    println("Found ${data.recipes.size} recipes.")
+    println("Found ${data.recipes.size} valid recipes after filtering.")
 
     println("\n")
 
-    val quality = "normal"
-//    println(data.recipes["electric-engine-unit"])
-//        itemRequirements(data.recipes["transport-belt"]!!, 1.0, data)
-    println()
-    val x = requirements(listOf(
-        recipeReq(data.recipes["utility-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["automation-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["logistic-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["chemical-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["production-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["military-science-pack"]!!, 1.0),
-//        recipeReq(data.recipes["quality-module-3"]!!, 0.012),
-    ), data)
+    val quality = config.quality
 
-    val forbiddenPlaces = mutableListOf<cords<Long>>(
-//        cords(1,1),
-    )
-//    (1..17).forEach { forbiddenPlaces.add(cords(it.toLong(), 8)) }
+    // 2. Load Requirements (Targets) from JSON
+    val requirementsList = config.targets.mapNotNull { target ->
+        val recipe = data.recipes[target.name]
+        if (recipe != null) {
+            recipeReq(recipe, target.amount)
+        } else {
+            println("WARNING: Target recipe '${target.name}' not found in data.")
+            null
+        }
+    }
+
+    val x = requirements(requirementsList, data)
+
+    // 3. Load Forbidden Places from JSON
+    val forbiddenPlaces = config.forbiddenPlaces.map { cords(it.x, it.y) }.toMutableList()
 
     (x).requirementsHumanOutput
-
 
     val ms = x.recipes.fold(0) { acc, item -> acc + ceil(item.noAssemblingMachines).toInt() } + forbiddenPlaces.size
 
     val maxX = ceil(ms.toDouble().pow(.5)).toLong()
-//    val maxX = 16L
     val maxY = ceil((ms.toDouble() / maxX.toDouble())).toLong()
 
     val bound1 = bounds(1, maxX, 1, maxY)
     logs.add(bound1.toString())
     logs.add("total filled spaces: $ms")
 
-
     Loader.loadNativeLibraries()
     val model = CpModel()
 
     val sourceOffset = 25
 
-    //note: y position is actually computed like maxY - y... my bad xd
-    val layoutOfSources = listOf<sourceItemLoc>(
-//        sourceItemLoc(data.items["iron-plate"]!!, cords(1,maxY)),
-//        sourceItemLoc(data.items["iron-plate"]!!, cords(2,maxY)),
-//        sourceItemLoc(data.items["iron-plate"]!!, cords(0,maxY-5)),
-////            sourceItemLoc(data.items["iron-plate"]!!, cords(2,0)),
-//        sourceItemLoc(data.items["copper-plate"]!!, cords(3,maxY)),
-//        sourceItemLoc(data.items["copper-plate"]!!, cords(4,maxY)),
-//        sourceItemLoc(data.items["copper-plate"]!!, cords(16,maxY-5)),
-//        sourceItemLoc(data.items["copper-plate"]!!, cords(16,maxY-2)),
-////        sourceItemLoc(data.items["copper-plate"]!!, cords(30,30)),
-//        sourceItemLoc(data.items["plastic-bar"]!!, cords(6,maxY)),
-//        sourceItemLoc(data.items["steel-plate"]!!, cords(8,maxY)),
-//        sourceItemLoc(data.items["steel-plate"]!!, cords(9,maxY)),
-//        sourceItemLoc(data.items["battery"]!!, cords(15,maxY)),
-//        sourceItemLoc(data.items["sulfur"]!!, cords(15,maxY)),
-//        sourceItemLoc(data.items["stone"]!!, cords(16,maxY-10)),
-//        sourceItemLoc(data.items["stone-brick"]!!, cords(16,maxY-11)),
-//        sourceItemLoc(data.items["stone-brick"]!!, cords(16,maxY)),
-//            sourceItemLoc(data.items["advanced-circuit"]!!, cords(20,0))
-//        sourceItemLoc(data.items["utility-science-pack"]!!, cords(0,0), 500.0),
-//                sourceItemLoc(data.items["automation-science-pack"]!!, cords(4,0), 500.0),
-//    sourceItemLoc(data.items["logistic-science-pack"]!!, cords(8,0), 500.0),
-//    sourceItemLoc(data.items["chemical-science-pack"]!!, cords(12,0), 500.0),
-//    sourceItemLoc(data.items["production-science-pack"]!!, cords(16,0), 500.0),
-        )
+    // 4. Load Layout of Sources from JSON
+    // Note: In your original code, you used `maxY` for positioning.
+    // Since `maxY` is calculated dynamically, the JSON needs explicit coordinates,
+    // or you must manually adjust the JSON Y values to match your grid size logic if needed.
+    val layoutOfSources = config.sources.mapNotNull { source ->
+        val item = data.items[source.name]
+        if (item != null) {
+            sourceItemLoc(item, cords(source.x, source.y), source.force)
+        } else {
+            println("WARNING: Source item '${source.name}' not found in data.")
+            null
+        }
+    }
 
     layoutOfSources.forEach { logs.add("layoutOfSources: ${it.item.name}, (${it.cords.x}, ${it.cords.y}, force: ${it.force}") }
 
-//    println(layout)
-//    data.recipes["fast-inserter"]!!.products.forEach { println(it.item) }
-//    println(data.recipes["fast-inserter"]!!.mainProduct!!.item)
-//    x.recipes.forEach { model.newIntVar(0, maxX.toLong(), "x_") }
-
     logs.add(bound1.toString())
     val layoutOfRecipes = x.getLayoutItems(bound1, "x")
-//    println()
-//    println(layoutOfRecipes)
 
     val cordsIntVars = layoutOfRecipes.map {
         layoutItemAndIntVar(it, cords(model.newIntVar(it.bounds.lx, it.bounds.ux, "x_${it.id}"),
-        model.newIntVar(it.bounds.ly, it.bounds.uy, "y_${it.id}")))
-    }
-
-    val forbiddenPlacesIntVars = forbiddenPlaces.map {
-        cords(model.newIntVar(bound1.lx, bound1.ux, "forbidden_place_x_${it.x}"),
-            model.newIntVar(bound1.ly, bound1.uy, "forbidden_place_y${it.y}"))
+            model.newIntVar(it.bounds.ly, it.bounds.uy, "y_${it.id}")))
     }
 
     cordsIntVars.forEach { a ->  cordsIntVars.forEach { b -> if(a.cords != b.cords) {
@@ -160,14 +139,8 @@ fun main() {
         val b_y = model.newBoolVar("by_${a.layoutItem.id}_${b.layoutItem.id}")
         model.addDifferent(a.cords.y, b.cords.y).onlyEnforceIf(b_y)
         model.addBoolOr(listOf(b_x, b_y))
-
-        } }
-//        forbiddenPlacesIntVars.forEach { forbidden ->
-//            model.addDifferent(a.cords.x, forbidden.x).onlyEnforceIf(bXDiff)
-//        }
+    } }
     }
-
-
 
     cordsIntVars.forEach { item ->
         forbiddenPlaces.forEach { forbidden ->
@@ -187,18 +160,15 @@ fun main() {
 
     val distances = cordsIntVars.map { consumer ->
         consumer.layoutItem.recipe.ingredients.map { ingredient ->
-//            Pair(data.recipes[it.name], it.amount)
             val totalIngredientNeed = ingredient.amount * consumer.layoutItem.amount
             var ingredientNeedLeft = totalIngredientNeed
             val feasibleLayoutOptions = cordsIntVars.filter { f -> f.layoutItem.item == ingredient.item }
-
-
 
             val distancesToSources = (layoutOfSources.filter { it.item == ingredient.item || it.item == consumer.layoutItem.item }).groupBy { it.item }.let {
                 it.keys.map { key ->
                     val sameSources = it[key]!!.map { source ->
                         val distXY = model.newIntVar(
-                            0, (maxX + maxY + sourceOffset * 2), // will be incorrect
+                            0, (maxX + maxY + sourceOffset * 2),
                             "dist_src_${consumer.layoutItem.id.string}_${source.item.name}_${source.cords.x}_${source.cords.y}"
                         )
                         val distX =
@@ -206,12 +176,10 @@ fun main() {
                         val distY =
                             model.newIntVar(0, maxY + sourceOffset, "dist_y_src_${consumer.layoutItem.id.string}_${source.item.name}")
 
-                        // |consumer.x - source.x_CONSTANT|
                         model.addAbsEquality(
                             distX,
                             LinearExpr.sum(arrayOf(consumer.cords.x, LinearExpr.constant(-source.cords.x)))
                         )
-                        // |consumer.y - source.y_CONSTANT|
                         model.addAbsEquality(
                             distY,
                             LinearExpr.sum(arrayOf(consumer.cords.y, LinearExpr.constant(-source.cords.y)))
@@ -267,7 +235,6 @@ fun main() {
                             maxX + maxY,
                             "dist_${consumer.layoutItem.id.string}_${ingredientAss.layoutItem.id.string}"
                         )
-//                val weight = model.newIntVar(0, (assemblerIngredientProduction * scalingFactor).toLong() + totalIngredientNeed.toLong() + 1, "weight_${consumer.layoutItem.id.string}_${ingredientAss.layoutItem.id.string}") // something extra for ub, because of rounding
 
                     model.addAbsEquality(
                         distX,
@@ -290,10 +257,6 @@ fun main() {
                     weightedCost
                 } else null
             }
-//            model.addAbsEquality(LinearExpr.constant((totalIngredientNeed * scalingFactor).toLong()), distanceToProducers.map { it.second }.toTypedArray())
-//            model.addEquality(LinearExpr.constant((totalIngredientNeed * scalingFactor).toLong()), LinearExpr.sum(distanceToProducers.map { it.second }.toTypedArray()))
-//            val allPossibleDistances = distanceToProducers.map { it.first } + distancesToSources
-//            allPossibleDistances
             distanceToProducers + distancesToSources
         }
     }.flatten().flatten()
@@ -313,20 +276,32 @@ fun main() {
     } else {
         println("No solution found.");
     }
-
-
 }
+
+// --- CONFIGURATION DATA CLASSES ---
+data class RunConfiguration(
+    val quality: String,
+    val forbiddenRecipes: List<String> = emptyList(),
+    val forbiddenPlaces: List<ConfigCords> = emptyList(),
+    val targets: List<ConfigTarget>,
+    val sources: List<ConfigSource> = emptyList()
+)
+
+data class ConfigCords(val x: Long, val y: Long)
+data class ConfigTarget(val name: String, val amount: Double)
+data class ConfigSource(val name: String, val x: Long, val y: Long, val force: Double = 1.0)
+
+
+// --- EXISTING HELPERS ---
 
 fun List<layoutItemAndIntVar>.printHumanOutput(bounds: bounds, solver: CpSolver) {
     println("-------------------- LAYOUT --------------------")
-    val emptySlot = " ".repeat(tableCellWidth) // Empty string of the same length
+    val emptySlot = " ".repeat(tableCellWidth)
     (bounds.ly..bounds.uy).forEach { y ->
         val rowItems = (bounds.lx..bounds.ux).map { x ->
-            // Find the assembler at this exact (x, y) coordinate
             val assembler = this.find {
                 solver.value(it.cords.x) == x && solver.value(it.cords.y) == y
             }
-
             assembler?.layoutItem?.item?.name?.formatToLength(tableCellWidth) ?: emptySlot
         }
         println("| " + rowItems.joinToString(" | ") + " |")
@@ -383,17 +358,13 @@ fun requirements(recipes: List<recipeReq>, data: RootData): req = recipes.map { 
         recipes.forEach { r ->
             val existingRecipe = recipesNew.find { it.recipe == r.recipe}
             if (existingRecipe != null) existingRecipe.count += r.count
-            else recipesNew.add(recipeAndCount(r.recipe, r.count)) // / r.recipe.mainProduct!!.amount))
+            else recipesNew.add(recipeAndCount(r.recipe, r.count))
         }
         req(recipesNew, set)
     }
 
-
-
 fun itemRequirements(recipe: Recipe, amount: Double, data: RootData, nested: Int = 0, recipes: MutableList<recipeAndCount> = mutableListOf(), items: MutableList<itemAndCount> = mutableListOf()): req {
-//    println("${"    ".repeat(nested)}|___ ${amount}x ${recipe.name}")
     recipe.ingredients.map { recipe ->
-//        println("${"    ".repeat(nested)}searching for ${recipe.name}")
         val newRecipe = data.recipes[recipe.name]
         if (newRecipe != null) {
             recipes.add(recipeAndCount(newRecipe, recipe.amount * amount))
@@ -401,9 +372,7 @@ fun itemRequirements(recipe: Recipe, amount: Double, data: RootData, nested: Int
         } else {
             if (data.items[recipe.name] != null) items.add(itemAndCount(data.items[recipe.name]!!, recipe.amount * amount))
             else logs.add("couldn't find ${recipe.name}")
-//            println("${"    ".repeat(nested + 1)}    - ${recipe.amount * amount}x ${recipe.name}")
         }
     }
     return req(recipes, items)
 }
-

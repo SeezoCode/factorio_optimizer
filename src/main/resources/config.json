@@ -1,0 +1,17 @@
+{
+  "quality": "normal",
+  "forbidden_recipes": [
+  ],
+  "forbidden_places": [
+  ],
+  "targets": [
+    { "name": "automation-science-pack", "amount": 1.0 },
+    { "name": "logistic-science-pack", "amount": 1.0 },
+    { "name": "chemical-science-pack", "amount": 1.0 },
+    { "name": "military-science-pack", "amount": 1.0 },
+    { "name": "utility-science-pack", "amount": 1.0 },
+    { "name": "production-science-pack", "amount": 1.0 }
+  ],
+  "sources": [
+  ]
+}
