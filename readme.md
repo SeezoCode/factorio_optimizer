@@ -13,9 +13,26 @@ The system considers input resource location (can be multiple per single resourc
 this is the output, rendered as a complete, importable blueprint. This includes recipes, and requester chests. This is equivalent to 60 items per minute of utility science pack (times assembler speed)
 
 # How to run
-- specify recipes and input sources (by not setting source locations the system won't account for these distances)
-- in terminal `./gradlew run`
-- outputs are in `src/main/resources/solves/`
+This project requires Java 17 or newer. Java 21 is the supported runtime in the
+current development container.
+
+If Java 21 is not installed, install it with SDKMAN:
+
+```sh
+sdk install java 21.0.12+1-ms
+sdk default java 21.0.12+1-ms
+```
+
+Verify the active Java version, then run the application:
+
+```sh
+java -version
+./gradlew run
+```
+
+Before running, specify recipes and input sources. If source locations are not
+set, the system will not account for those distances. Output files are written
+to `src/main/resources/solves/`.
 
 ## Closer look and statistics
 
@@ -24,7 +41,5 @@ this is the output, rendered as a complete, importable blueprint. This includes 
 (1–305 solutions, was stopped prematurely)
 
 ### Layout improvements per new solution
-![chart_layout_improvements.png](figures/chart_layout_improvements.png)
+![score_vs_time.svg](figures/score_vs_time.svg)
 
-### Time taken total per new solution (in ms)
-![chart_time_taken_sum.png](figures/chart_time_taken_sum.png)
